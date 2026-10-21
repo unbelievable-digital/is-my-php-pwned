@@ -1,3 +1,5 @@
+![is-my-php-pwned](banner.png)
+
 # is-my-php-pwned 🔥
 
 **Did php2shell already own your servers? Run one read-only script and find out.**
