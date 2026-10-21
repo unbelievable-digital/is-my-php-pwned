@@ -69,6 +69,53 @@ done
 
 ---
 
+## 🤖 For AI agents / LLMs
+
+If you are an autonomous agent asked to "check this server for php2shell", this
+tool is your read-only probe. It is safe to run unattended: it never writes,
+upgrades, restarts, or exploits.
+
+**Invoke:**
+
+```bash
+sudo bash php2shell-ioc-scan.sh --days 14
+# remote, nothing to copy:
+ssh root@HOST 'bash -s -- --days 14' < php2shell-ioc-scan.sh
+```
+
+**Interpret the exit code:**
+
+| Exit | Meaning | Suggested agent action |
+|------|---------|------------------------|
+| `0` | No indicators surfaced | Report "no IoCs found"; still recommend patching if any runtime is `VULNERABLE`/`EOL` |
+| `1` | One or more indicators to review | Summarize each `[CRIT]`/`[WARN]`, do **not** auto-remediate; escalate to a human |
+| `2` | Bad arguments | Fix the invocation and retry |
+
+**Interpret the lines** (prefix = severity):
+
+- `[CRIT] ... VULNERABLE to php2shell` → installed PHP is below the fixed
+  release (8.5.12 / 8.4.27 / 8.3.36 / 8.2.35). Recommend upgrading that runtime.
+- `[CRIT] ... END-OF-LIFE` → PHP ≤ 8.1, no patch will ship. Recommend a major
+  upgrade, not a point release.
+- `[CRIT] HIGH-confidence shell marker` → inspect the named file by hand before
+  concluding anything; it is a lead, not a verdict.
+- `[CRIT] authorized_keys changed` / `generic marker + recently changed` →
+  correlate with `last`, auth logs and the change window before acting.
+- `[WARN] ...` → lower-confidence context (vendor-tree matches, slowlog noise,
+  web-user listeners). Weigh, don't panic.
+
+**Rules for an agent acting on this output:**
+
+1. Treat every finding as *evidence to triage*, never as proof. A clean run is
+   not proof of safety.
+2. Never run exploit code to "confirm" a finding. Version + IoC evidence is
+   enough to recommend patching.
+3. The only real fix is upgrading PHP to a fixed release (or a distro build that
+   backports the fix). Config tweaks do not close the bug.
+4. Do not modify the host from this signal without explicit human approval.
+
+---
+
 ## What it checks
 
 1. **PHP version vs fixed** — every `php-fpm*`, LiteSpeed `lsphp*` and
